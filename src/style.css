@@ -6,6 +6,7 @@
     right: 0;
     padding: 16px;
     background-color: #efefef;
+    z-index: 9999999999;
 }
 .cjco-app-inner{
     width: 100%;

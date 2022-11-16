@@ -123,10 +123,12 @@ const cjcoAppBar=(data)=>{
         meta.content = "width=device-width,initial-scale=1.0";
         document.getElementsByTagName('head')[0].appendChild(meta);
     }
-    
-    if(window.matchMedia("(max-width: 600px)").matches){
-        cjcoAppBarStart(data)
-    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        if(window.matchMedia("(max-width: 600px)").matches){
+            cjcoAppBarStart(data)
+        }
+    })
     window.addEventListener('resize', function(event) {
         if(window.matchMedia("(max-width: 600px)").matches){
             cjcoAppBarStart(data)
