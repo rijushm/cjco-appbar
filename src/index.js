@@ -4,6 +4,7 @@ require('@fortawesome/fontawesome-free/js/solid')
 require('@fortawesome/fontawesome-free/js/regular')
 require('@fortawesome/fontawesome-free/js/brands')
 const {gsap} =  require("gsap");
+var moment = require('moment-timezone');
 
 function getDeviceOperatingSystem() {
     var userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -23,15 +24,22 @@ function getDeviceOperatingSystem() {
     return "unknown";
 }
 
-const cjcoAppBarStart=(data)=>{
-    // console data
-    // console.log(data.url)
-    // console.log(data.text)
+const cjcoAppBarStart = async (data)=>{
+
+    var mainUrl;
+    var ctaText = data.text;
+    
+    if(typeof data.icon == 'undefined'){
+        data.icon = true
+    }
 
     // get device type
     var device = getDeviceOperatingSystem();
 
     // create app bar wrapper
+    if(document.querySelector('.cjco-app-wrapper')){
+        return;
+    }
     var appWrapper = document.createElement("div")
     appWrapper.classList.add('cjco-app-wrapper')
     appWrapper.style.background = data.backgroud
@@ -39,18 +47,6 @@ const cjcoAppBarStart=(data)=>{
     // create app bar link
     var appHref = document.createElement("a")
     appHref.classList.add('cjco-app-url')
-    appHref.target = '_blank'
-
-    if(device == 'Android'){
-        appHref.href = data.android
-    }
-    else if(device == 'iOS'){
-        appHref.href = data.ios
-    }
-    else{
-        appHref.href = data.ios
-    }
-
 
     // create app bar inner block
     var appInner = document.createElement("div")
@@ -59,38 +55,137 @@ const cjcoAppBarStart=(data)=>{
 
     // create app bar text
     var appText = document.createElement("p")
-    appText.innerHTML = data.text;
     appText.classList.add('cjco-app-text', 'flow-up')
 
     // create app bar icon wrap
     var appIconWrap = document.createElement("i")
     appIconWrap.classList.add('cjco-app-icon-wrap', 'flow-up')
 
-    // create app bar icon
-    var appIcon = document.createElement("i")
-    appIcon.classList.add('cjco-app-icon')
-
-    if(device == 'Windows'){
-        appIcon.classList.add('fa-brands', 'fa-windows')
-    }
-    else if(device == 'Android'){
-        appIcon.classList.add('fab', 'fa-google-play')
-    }
-    else if(device == 'iOS'){
-        appIcon.classList.add('fa-brands', 'fa-app-store')
-    }
-    else{
-        appIcon.classList.add('fa-brands', 'fa-app-store')
+    if(data.target){
+        appHref.target = data.target
+    }else{
+        appHref.target = '_blank'
     }
 
-    appIconWrap.appendChild(appIcon)
+    if(data.url){
+        mainUrl = data.url
+    }else{
+        if(device == 'Android'){
+            if(data.android){
+                mainUrl = data.android
+            }
+        }
+        else if(device == 'iOS'){
+            if(data.ios){
+                mainUrl = data.ios
+            }
+        }
+        else{
+            if(data.ios){
+                mainUrl = data.ios
+            }
+        }
+    }
+    
+    appHref.href = mainUrl
+    appText.innerHTML = ctaText;
+
+    if(data.automate){
+        data.automate.forEach(async automate => {
+
+            let weekDayIndex, currentDate, currentStoreDate, currentStoreTime, startStoreTime, endStoreTime;
+
+            var week = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+            const weekDayIndexAPI = moment().day();
+
+            currentDate = moment().tz(`${automate.country}/${automate.city}`).format();
+
+            currentStoreDate = moment().format('YYYY-MM-DD')
+            startDate = moment.tz(`${currentStoreDate} ${automate.startTime}`, `${automate.country}/${automate.city}`).format();
+            endDate = moment.tz(`${currentStoreDate} ${automate.endTime}`, `${automate.country}/${automate.city}`).format();
+
+            if(automate.days){
+                automate.days.forEach((day)=>{
+                
+                    if(week.includes(day)){
+                        weekDayIndex = week.indexOf(day);
+                        
+                        if(weekDayIndexAPI == weekDayIndex){
+
+                            if(moment(currentDate).isBetween(startDate, endDate)){
+                                mainUrl = automate.url
+                                ctaText = automate.text
+                            }
+                            
+                        }
+                    }else{
+                        console.log('Insert a correct name of weekday. Inserted: '+day)
+                        return
+                    }
+
+                })
+            }
+
+            appHref.href = mainUrl
+            appText.innerHTML = ctaText;
+
+            // fetch(url)
+            //     .then(r => r.json())
+            //     .then(r => {
+            //         const day_of_week = r.day_of_week;
+
+            //         automate.days.forEach((day)=>{
+            
+            //             if(week.includes(day)){
+            //                 weekDayIndex = week.indexOf(day);
+                            
+            //                 if(day_of_week == weekDayIndex){
+            //                     console.log('matched')
+            //                     mainUrl = automate.url
+            //                     ctaText = automate.text
+            //                 }
+            //             }else{
+            //                 console.error('Insert a correct name of weekday. Inserted: '+day)
+            //                 return;
+            //             }
+        
+            //         })
+
+            // });
+        });
+    }
 
     const body = document.body
     body.appendChild(appWrapper)
     appWrapper.appendChild(appHref)
     appHref.appendChild(appInner)
     appInner.append(appText)
-    appInner.append(appIconWrap)
+
+    if(data.icon == true){
+        // create app bar icon
+        var appIcon = document.createElement("i")
+        appIcon.classList.add('cjco-app-icon')
+
+        if(data.url){
+            appIcon.classList.add('fa', 'fa-arrow-right')
+        }else{
+            if(device == 'Windows'){
+                appIcon.classList.add('fa-brands', 'fa-windows')
+            }
+            else if(device == 'Android'){
+                appIcon.classList.add('fab', 'fa-google-play')
+            }
+            else if(device == 'iOS'){
+                appIcon.classList.add('fa-brands', 'fa-app-store')
+            }
+            else{
+                appIcon.classList.add('fa-brands', 'fa-app-store')
+            }
+        }
+        appInner.append(appIconWrap)
+        appIconWrap.appendChild(appIcon)
+    }
 
     var barHeight = appWrapper.clientHeight;
 
@@ -102,12 +197,12 @@ const cjcoAppBarStart=(data)=>{
         ease: 'elastic.inOut(1, 0.5)'
     })
 
-    // tl.from('.flow-up', {
-    //     y: 50,
-    //     duration: 2.6,
-    //     stagger: 0.2,
-    //     ease: 'elastic.inOut(1, 0.5)'
-    // }, -0.0001)
+    tl.from('.flow-up', {
+        y: 50,
+        duration: 2.6,
+        stagger: 0.2,
+        ease: 'elastic.inOut(1, 0.5)'
+    }, -0.0001)
 
 }
 
